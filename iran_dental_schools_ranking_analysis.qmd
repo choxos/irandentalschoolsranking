@@ -1,0 +1,84 @@
+---
+title: "Iran Dental Schools Ranking"
+author: "Ahmad Sofi-Mahmudi"
+format: pdf
+editor: visual
+---
+
+## Aim
+
+In this project, I aimed to rank dental schools in Iran using principal component analysis of five variables:
+
+-   Average mark of students;
+
+-   Number of all professors;
+
+-   Number of full and associate professors;
+
+-   Median mark in residency exam; and,
+
+-   The proportion of participants in the residency exam who were allowed to choose their specialty.
+
+## Analysis
+
+First, we load the data:
+
+```{r}
+dental_data = read.csv("iran_dental_schools_data.csv")
+```
+
+This data set has data for these 34 schools:
+
+```{r}
+dental_data$School
+```
+
+The variables are:
+
+```{r}
+names(dental_data)
+```
+
+Now, we run the PCA analysis:
+
+```{r}
+library(FactoMineR)
+library(dplyr)
+
+pca_out = PCA(dental_data[,-1])
+score0 = pca_out$ind$coord[,1]
+pca_score = 100*(score0 - min(score0))/(max(score0) - min(score0))
+score = as.data.frame(pca_score)
+pca_data = bind_cols(dental_data, score)
+```
+
+Here are the scores:
+
+```{r}
+sorted_pca = pca_data[, c(1, 7)][order(pca_data$pca_score, decreasing = T),]
+sorted_pca
+```
+
+We can also plot it:
+
+```{r}
+library(ggplot2)
+
+sorted_pca %>% 
+        ggplot() +
+        aes(x = reorder(School, pca_score), y = pca_score) +
+        geom_bar(stat = "identity") +
+        scale_fill_gradient2(high = "red", low = "white") +
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+        scale_x_discrete(limits = sorted_pca$School) +
+        xlab(NULL) +
+        ylab("PCA score")
+
+# ggsave("PCA_scores.png", width = 16, height = 8, units = "in", dpi = 300)
+```
+
+Now, we can save the data:
+
+```{r}
+write.csv(sorted_pca, "dental_schools_ranking_data.csv", row.names = F)
+```
